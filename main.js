@@ -107,4 +107,139 @@ function printResults(data) {
 }
 
 // Display results
+// GUI Popup implementation
+function showPopup(data) {
+    const modalId = "fh-extractor-modal";
+    const existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = modalId;
+    Object.assign(overlay.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: "2147483647",
+        fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        backdropFilter: "blur(4px)"
+    });
+
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
+        backgroundColor: "#1a1a1a",
+        color: "#e0e0e0",
+        width: "90%",
+        maxWidth: "650px",
+        maxHeight: "85%",
+        borderRadius: "16px",
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+        border: "1px solid #333",
+        animation: "fhFadeIn 0.3s ease-out"
+    });
+
+    // Add styles
+    const style = document.createElement("style");
+    style.innerHTML = `
+        @keyframes fhFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        #fh-content-area::-webkit-scrollbar { width: 8px; }
+        #fh-content-area::-webkit-scrollbar-track { background: #121212; border-radius: 4px; }
+        #fh-content-area::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        #fh-content-area::-webkit-scrollbar-thumb:hover { background: #444; }
+    `;
+    document.head.appendChild(style);
+
+    const header = document.createElement("div");
+    header.style.marginBottom = "20px";
+    header.innerHTML = `<h2 style="margin:0; color:#00ff00; font-size:24px;">Extraction Results</h2>`;
+    modal.appendChild(header);
+
+    const contentArea = document.createElement("div");
+    contentArea.id = "fh-content-area";
+    Object.assign(contentArea.style, {
+        flex: "1",
+        overflowY: "auto",
+        marginBottom: "24px",
+        padding: "16px",
+        backgroundColor: "#0d0d0d",
+        borderRadius: "12px",
+        fontSize: "14px",
+        lineHeight: "1.6",
+        border: "1px solid #222"
+    });
+
+    let rawText = "--- FIBERHOME EXTRACTION RESULTS ---\n\n";
+    for (const [group, items] of Object.entries(data)) {
+        if (items.length === 0) continue;
+
+        rawText += `[ ${group} ]\n`;
+        const groupSec = document.createElement("div");
+        groupSec.style.marginBottom = "25px";
+        groupSec.innerHTML = `<h3 style="color:#00acee; border-bottom:1px solid #333; padding-bottom:8px; margin-top:0;">${group}</h3>`;
+
+        items.forEach((item, index) => {
+            const block = document.createElement("div");
+            block.style.marginBottom = "15px";
+            block.innerHTML = `<div style="color:#ffcc00; font-weight:600;">${item.Name}</div>`;
+            rawText += `${index + 1}. ${item.Name}\n`;
+
+            const list = document.createElement("div");
+            list.style.paddingLeft = "12px";
+            list.style.borderLeft = "2px solid #222";
+
+            for (const [key, value] of Object.entries(item)) {
+                if (key === "Name") continue;
+                rawText += `   ${key}: ${value}\n`;
+                const row = document.createElement("div");
+                row.style.fontSize = "13px";
+                row.innerHTML = `<span style="color:#888; width:140px; display:inline-block;">${key}:</span> <span style="color:#fff;">${value}</span>`;
+                list.appendChild(row);
+            }
+            rawText += "\n";
+            block.appendChild(list);
+            groupSec.appendChild(block);
+        });
+        contentArea.appendChild(groupSec);
+    }
+    modal.appendChild(contentArea);
+
+    const footer = document.createElement("div");
+    Object.assign(footer.style, { display: "flex", justifyContent: "flex-end", gap: "12px" });
+
+    const copyBtn = document.createElement("button");
+    copyBtn.innerText = "Copy to Clipboard";
+    Object.assign(copyBtn.style, { padding: "10px 20px", backgroundColor: "#00acee", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600" });
+    copyBtn.onclick = () => {
+        const textarea = document.createElement("textarea");
+        textarea.value = rawText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        copyBtn.innerText = "✓ Copied!";
+        setTimeout(() => copyBtn.innerText = "Copy to Clipboard", 2000);
+    };
+
+    const closeBtn = document.createElement("button");
+    closeBtn.innerText = "Close";
+    Object.assign(closeBtn.style, { padding: "10px 20px", backgroundColor: "#333", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600" });
+    closeBtn.onclick = () => overlay.remove();
+
+    footer.appendChild(copyBtn);
+    footer.appendChild(closeBtn);
+    modal.appendChild(footer);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
+
+// Display results
 printResults(extractedData);
+showPopup(extractedData);
