@@ -4,7 +4,6 @@ Extract details from Algeria Telecom's FiberHome modems
 
 ### TODO: 
 - URL based execution `javascript:...`
-- extract Vlan ID
 - Test and support more routers / sotfware version
 - docs: Usage
 

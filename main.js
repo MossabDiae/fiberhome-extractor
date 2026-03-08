@@ -69,7 +69,8 @@ if (wanData && wanData.wan) {
         extractedData["PPPoE creds"].push({
             Name: item.Name,
             Username: item.Username,
-            Password: fhdecrypt(item.Password)
+            Password: fhdecrypt(item.Password),
+            "Vlan ID": item.vlanid
         });
     });
 }
