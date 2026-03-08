@@ -1,12 +1,26 @@
+// getting the decryption function from window context
+try {
+    window.fhdecrypt = fhdecrypt;
+} catch (e) {
+    // If fhdecrypt is not defined at all, we catch the ReferenceError here
+}
+
+// Check for decryption method, if missing use a fallback that adds a note
+if (typeof window.fhdecrypt !== "function") {
+    console.warn("%cWarning: couldn't find decryption method (fhdecrypt) in the page context. Values will be shown as seen.", "color: #ffa500; font-weight: bold;");
+    window.fhdecrypt = (val) => val + " (could not decrypt, missing decryption method)";
+}
+
+// Support configurations
+const SUPPORTED_MODELS = ['HG6145F1'];
+const SUPPORTED_SOFTWARE = ['RP4421'];
+
 // Initialize an object where extracted data is grouped
 const extractedData = {
+    "Device Info": [],
     "PPPoE creds": [],
     "Voip creds": []
 };
-
-// getting the decryption function (used for some values extraction)
-// from window context
-window.fhdecrypt = fhdecrypt;
 
 // abstraction to get json from url
 function getJSON(url) {
@@ -28,8 +42,22 @@ function getJSON(url) {
 }
 
 // ENDPONTS
+// '/cgi-bin/ajax?ajaxmethod=get_base_info'
 // '/cgi-bin/ajax?ajaxmethod=get_allwan_info'
 // '/cgi-bin/ajax?ajaxmethod=get_voice_base_info'
+
+// Extraction logic: Device Info
+const deviceInfo = getJSON('/cgi-bin/ajax?ajaxmethod=get_base_info');
+if (deviceInfo) {
+    const modelNote = SUPPORTED_MODELS.includes(deviceInfo.ModelName) ? "" : " (not tested, extraction may not work)";
+    const softwareNote = SUPPORTED_SOFTWARE.includes(deviceInfo.SoftwareVersion) ? "" : " (not tested, extraction may not work)";
+
+    extractedData["Device Info"].push({
+        Name: "Unit Information",
+        "Model Name": `${deviceInfo.ModelName}${modelNote}`,
+        "Software Version": `${deviceInfo.SoftwareVersion}${softwareNote}`,
+    });
+}
 
 // Extraction logic: WAN (PPPoE)
 const wanData = getJSON('/cgi-bin/ajax?ajaxmethod=get_allwan_info');
