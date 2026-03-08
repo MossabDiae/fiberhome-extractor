@@ -3,6 +3,8 @@ Extract PPPoE and VoIP credentials from Algeria Telecom's FiberHome modems
 
 ### Usage
 - Login to admin interface at `192.168.1.1`
+
+*Note: if you can't access via SuperAdmin, try the tool with default user account, `user/user1234`*
 - Select the address bar
 - Paste the following:
 ```
