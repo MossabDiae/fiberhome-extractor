@@ -1,4 +1,4 @@
-# fiberhome-extractor
+# ⚡️ Fiberhome Extractor ⚡️
 Extract PPPoE and VoIP credentials from Algeria Telecom's FiberHome modems
 
 ### Usage
