@@ -124,6 +124,11 @@ function printResults(data) {
 }
 
 // Display results
+// Download config function
+function downloadConfig() {
+    window.location = "../cgi-bin/download?usrconfig_conf";
+}
+
 // GUI Popup implementation
 function showPopup(data) {
     const modalId = "fh-extractor-modal";
@@ -250,6 +255,12 @@ function showPopup(data) {
     Object.assign(closeBtn.style, { padding: "10px 20px", backgroundColor: "#333", border: "none", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600" });
     closeBtn.onclick = () => overlay.remove();
 
+    const extractBtn = document.createElement("button");
+    extractBtn.innerText = "Extract Config";
+    Object.assign(extractBtn.style, { padding: "10px 20px", backgroundColor: "#333", border: "1px solid #444", borderRadius: "8px", color: "white", cursor: "pointer", fontWeight: "600" });
+    extractBtn.onclick = () => downloadConfig();
+
+    footer.appendChild(extractBtn);
     footer.appendChild(copyBtn);
     footer.appendChild(closeBtn);
     modal.appendChild(footer);
