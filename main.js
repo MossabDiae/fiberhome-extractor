@@ -1,9 +1,12 @@
-// getting the decryption function from window context
-try {
-    window.fhdecrypt = fhdecrypt;
-} catch (e) {
-    // If fhdecrypt is not defined at all, we catch the ReferenceError here
-}
+window.fhdecrypt = typeof fhdecrypt === 'function'
+    ? fhdecrypt
+    : Array.from(window.frames).find(f => {
+        try {
+            return f.fhdecrypt && typeof f.fhdecrypt === 'function';
+        } catch (e) {
+            return false;
+        }
+    })?.fhdecrypt;
 
 // Check for decryption method, if missing use a fallback that adds a note
 if (typeof window.fhdecrypt !== "function") {
