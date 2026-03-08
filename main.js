@@ -49,6 +49,19 @@ function getJSON(url) {
 // '/cgi-bin/ajax?ajaxmethod=get_allwan_info'
 // '/cgi-bin/ajax?ajaxmethod=get_voice_base_info'
 
+// Extraction logic: Login User
+const loginInfo = getJSON('/cgi-bin/ajax?ajaxmethod=get_login_user');
+if (loginInfo && loginInfo.login_user) {
+    let loggedInAs = "Unknown";
+    loggedInAs = loginInfo.login_user === "2" ? "admin" : (loginInfo.login_user === "1" ? "user" : loginInfo.login_user);
+
+    extractedData["Device Info"].push({
+        Name: "User Info",
+        "Logged in as": loggedInAs,
+    });
+
+}
+
 // Extraction logic: Device Info
 const deviceInfo = getJSON('/cgi-bin/ajax?ajaxmethod=get_base_info');
 if (deviceInfo) {
