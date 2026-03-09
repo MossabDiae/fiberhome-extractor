@@ -15,6 +15,13 @@ javascript:fetch('https://raw.githubusercontent.com/MossabDiae/fiberhome-extract
 - Press Enter
 ![result](img/results.png)
 
+### Features
+- Extract PPPoE credentials
+- Extract VoIP credentials
+- Unprivileged download of config file
+
+### Known issues
+- Credentials cannot be decrypted for `RP4423` software version
 
 ### TODO
 - Test and support more routers / sotfware version
