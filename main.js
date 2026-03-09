@@ -1,12 +1,5 @@
-window.fhdecrypt = typeof fhdecrypt === 'function'
-    ? fhdecrypt
-    : Array.from(window.frames).find(f => {
-        try {
-            return f.fhdecrypt && typeof f.fhdecrypt === 'function';
-        } catch (e) {
-            return false;
-        }
-    })?.fhdecrypt;
+const aesCode = await fetch('/js/aes.js').then(r => r.text());
+eval(aesCode);
 
 // Check for decryption method, if missing use a fallback that adds a note
 if (typeof window.fhdecrypt !== "function") {
