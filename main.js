@@ -106,7 +106,7 @@ if (voipResponse && voipResponse.voice_base) {
 
 // Beautiful print function
 function printResults(data) {
-    console.log("%c--- Extraction Results ---", "color: #00ff00; font-weight: bold; font-size: 1.2em;");
+    console.log("%c--- ⚡️ Fiberhome Extractor ⚡️ ---", "color: #00ff00; font-weight: bold; font-size: 1.2em;");
 
     for (const [group, items] of Object.entries(data)) {
         if (items.length === 0) continue;
@@ -181,7 +181,7 @@ function showPopup(data) {
 
     const header = document.createElement("div");
     header.style.marginBottom = "20px";
-    header.innerHTML = `<h2 style="margin:0; color:#00ff00; font-size:24px;">Extraction Results</h2>`;
+    header.innerHTML = `<h2 style="margin:0; color:#00ff00; font-size:24px;">⚡️ Fiberhome Extractor ⚡️</h2>`;
     modal.appendChild(header);
 
     const contentArea = document.createElement("div");
