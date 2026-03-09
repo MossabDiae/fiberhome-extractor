@@ -12,6 +12,13 @@ if (typeof window.fhdecrypt !== "function") {
     window.fhdecrypt = (val) => val + " (could not decrypt, missing decryption method)";
 }
 
+// Wrapper for fhdecrypt to handle empty/missing values
+const _originalDecrypt = window.fhdecrypt;
+window.fhdecrypt = (val) => {
+    if (!val || val === "") return "not extracted";
+    return _originalDecrypt(val);
+};
+
 // Support configurations
 const SUPPORTED_MODELS = ['HG6145F1'];
 const SUPPORTED_SOFTWARE = ['RP4421'];
