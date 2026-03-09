@@ -1,5 +1,10 @@
-const aesCode = await fetch('/js/aes.js').then(r => r.text());
-eval(aesCode);
+$.ajax({
+    url: '/js/aes.js',
+    async: false,
+    success: function (code) {
+        eval(code);
+    }
+});
 
 // Check for decryption method, if missing use a fallback that adds a note
 if (typeof window.fhdecrypt !== "function") {
