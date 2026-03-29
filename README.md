@@ -13,6 +13,11 @@ import("https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@vv2_migration
 <!-- 
 allow multi reloads during debug using:
 import(`https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@vv2_migration/main.js?t=${Date.now()}`);
+
+or directly use commit
+
+import(`https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@<commit-hash>/main.js`);
+
 -->
 
 - Press Enter
