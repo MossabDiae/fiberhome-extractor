@@ -1,115 +1,32 @@
-$.ajax({
-    url: '/js/aes.js',
-    async: false,
-    success: function (code) {
-        eval(code);
-    }
-});
-
-// Check for decryption method, if missing use a fallback that adds a note
-if (typeof window.fhdecrypt !== "function") {
-    console.warn("%cWarning: couldn't find decryption method (fhdecrypt) in the page context. Values will be shown as seen.", "color: #ffa500; font-weight: bold;");
-    window.fhdecrypt = (val) => val + " (could not decrypt, missing decryption method)";
-}
-
-// Wrapper for fhdecrypt to handle empty/missing values
-const _originalDecrypt = window.fhdecrypt;
-window.fhdecrypt = (val) => {
-    if (!val || val === "") return "not extracted";
-    return _originalDecrypt(val);
-};
-
 // Support configurations
 const SUPPORTED_MODELS = ['HG6145F1'];
-const SUPPORTED_SOFTWARE = ['RP4421'];
+const SUPPORTED_SOFTWARE = ['RP4421', 'RP4423'];
 
-// Initialize an object where extracted data is grouped
-const extractedData = {
-    "Device Info": [],
-    "PPPoE creds": [],
-    "Voip creds": []
-};
 
-// abstraction to get json from url
-function getJSON(url) {
-    let result = null;
-
-    $.ajax({
-        url: url,
-        async: false,
-        success: (response) => {
-            try {
-                result = typeof response === "string" ? JSON.parse(response) : response;
-            } catch (e) {
-                result = null;
-            }
-        }
-    });
-
-    return result;
+// ===== Utils =====
+async function loadJS(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to load ${url}: ${response.status}`);
+    const code = await response.text();
+    const script = document.createElement("script");
+    script.textContent = code;
+    document.head.appendChild(script);
 }
 
-// ENDPONTS
-// '/cgi-bin/ajax?ajaxmethod=get_base_info'
-// '/cgi-bin/ajax?ajaxmethod=get_allwan_info'
-// '/cgi-bin/ajax?ajaxmethod=get_voice_base_info'
-
-// Extraction logic: Login User
-const loginInfo = getJSON('/cgi-bin/ajax?ajaxmethod=get_login_user');
-if (loginInfo && loginInfo.login_user) {
-    let loggedInAs = "Unknown";
-    loggedInAs = loginInfo.login_user === "2" ? "admin" : (loginInfo.login_user === "1" ? "user" : loginInfo.login_user);
-
-    extractedData["Device Info"].push({
-        Name: "User Info",
-        "Logged in as": loggedInAs,
-    });
-
+async function getJSON(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+    return response.json();
 }
 
-// Extraction logic: Device Info
-const deviceInfo = getJSON('/cgi-bin/ajax?ajaxmethod=get_base_info');
-if (deviceInfo) {
-    const modelNote = SUPPORTED_MODELS.includes(deviceInfo.ModelName) ? "" : " (not tested, extraction may not work)";
-    const softwareNote = SUPPORTED_SOFTWARE.includes(deviceInfo.SoftwareVersion) ? "" : " (not tested, extraction may not work)";
-
-    extractedData["Device Info"].push({
-        Name: "Unit Information",
-        "Model Name": `${deviceInfo.ModelName}${modelNote}`,
-        "Software Version": `${deviceInfo.SoftwareVersion}${softwareNote}`,
-    });
+// Download config function
+function downloadConfig() {
+    window.location = "../cgi-bin/download?usrconfig_conf";
 }
 
-// Extraction logic: WAN (PPPoE)
-const wanData = getJSON('/cgi-bin/ajax?ajaxmethod=get_allwan_info');
-if (wanData && wanData.wan) {
-    wanData.wan.forEach(item => {
-        extractedData["PPPoE creds"].push({
-            Name: item.Name,
-            Username: item.Username,
-            Password: fhdecrypt(item.Password),
-            "Vlan ID": item.vlanid
-        });
-    });
-}
 
-// Extraction logic: VoIP
-const voipResponse = getJSON('/cgi-bin/ajax?ajaxmethod=get_voice_base_info');
-if (voipResponse && voipResponse.voice_base) {
-    const voipData = voipResponse.voice_base;
-    extractedData["Voip creds"].push({
-        Name: "VoIP Settings",
-        "VoIP Username": fhdecrypt(voipData.AuthUserName1),
-        "VoIP Password": fhdecrypt(voipData.AuthPassword1),
-        "Telephone Number": fhdecrypt(voipData.DirectoryNumber1),
-        "Proxy Server": voipData.ProxyServer,
-        "Proxy Server Port": voipData.ProxyServerPort,
-        "Register Server": voipData.RegistrarServer,
-        "Register Server Port": voipData.RegistrarServerPort
-    });
-}
-
-// Beautiful print function
+// ===== UI utils =====
+// Pretty print
 function printResults(data) {
     console.log("%c--- ⚡️ Fiberhome Extractor ⚡️ ---", "color: #00ff00; font-weight: bold; font-size: 1.2em;");
 
@@ -128,13 +45,7 @@ function printResults(data) {
     }
 }
 
-// Display results
-// Download config function
-function downloadConfig() {
-    window.location = "../cgi-bin/download?usrconfig_conf";
-}
-
-// GUI Popup implementation
+// GUI Popup
 function showPopup(data) {
     const modalId = "fh-extractor-modal";
     const existing = document.getElementById(modalId);
@@ -272,6 +183,91 @@ function showPopup(data) {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 }
+
+
+// ===== ENTRY POINT =====
+// Init vars
+let deviceModel;
+let deviceMac;
+let deviceSoftware;
+
+const extractedData = {
+    "Device Info": [],
+    "PPPoE creds": [],
+    "Voip creds": []
+};
+
+// Load required scripts
+await loadJS('/js/aes.js');
+
+// Decryption method and fallback
+if (typeof window.fhdecrypt !== "function") {
+    console.warn("%cWarning: couldn't find decryption method (fhdecrypt) in the page context. Values will be shown as seen.", "color: #ffa500; font-weight: bold;");
+    window.fhdecrypt = (val) => val + " (could not decrypt, missing decryption method)";
+}
+
+// Wrapper for fhdecrypt to handle empty/missing values
+const _originalDecrypt = window.fhdecrypt;
+window.fhdecrypt = (val) => {
+    if (!val || val === "") return "not extracted";
+    return _originalDecrypt(val);
+};
+
+// Extraction logic: Login User
+const loginInfo = await getJSON('/cgi-bin/ajax?ajaxmethod=get_login_user');
+if (loginInfo && loginInfo.login_user) {
+    let loggedInAs = "Unknown";
+    loggedInAs = loginInfo.login_user === "2" ? "admin" : (loginInfo.login_user === "1" ? "user" : loginInfo.login_user);
+
+    extractedData["Device Info"].push({
+        Name: "User Info",
+        "Logged in as": loggedInAs,
+    });
+
+}
+
+// Extraction logic: Device Info
+const deviceInfo = await getJSON('/cgi-bin/ajax?ajaxmethod=get_base_info');
+if (deviceInfo) {
+    const modelNote = SUPPORTED_MODELS.includes(deviceInfo.ModelName) ? "" : " (not tested, extraction may not work)";
+    const softwareNote = SUPPORTED_SOFTWARE.includes(deviceInfo.SoftwareVersion) ? "" : " (not tested, extraction may not work)";
+
+    extractedData["Device Info"].push({
+        Name: "Unit Information",
+        "Model Name": `${deviceInfo.ModelName}${modelNote}`,
+        "Software Version": `${deviceInfo.SoftwareVersion}${softwareNote}`,
+    });
+}
+
+// Extraction logic: WAN (PPPoE)
+const wanData = await getJSON('/cgi-bin/ajax?ajaxmethod=get_allwan_info');
+if (wanData && wanData.wan) {
+    wanData.wan.forEach(item => {
+        extractedData["PPPoE creds"].push({
+            Name: item.Name,
+            Username: item.Username,
+            Password: fhdecrypt(item.Password),
+            "Vlan ID": item.vlanid
+        });
+    });
+}
+
+// Extraction logic: VoIP
+const voipResponse = await getJSON('/cgi-bin/ajax?ajaxmethod=get_voice_base_info');
+if (voipResponse && voipResponse.voice_base) {
+    const voipData = voipResponse.voice_base;
+    extractedData["Voip creds"].push({
+        Name: "VoIP Settings",
+        "VoIP Username": fhdecrypt(voipData.AuthUserName1),
+        "VoIP Password": fhdecrypt(voipData.AuthPassword1),
+        "Telephone Number": fhdecrypt(voipData.DirectoryNumber1),
+        "Proxy Server": voipData.ProxyServer,
+        "Proxy Server Port": voipData.ProxyServerPort,
+        "Register Server": voipData.RegistrarServer,
+        "Register Server Port": voipData.RegistrarServerPort
+    });
+}
+
 
 // Display results
 printResults(extractedData);
