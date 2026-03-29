@@ -10,6 +10,11 @@ Extract PPPoE and VoIP credentials from Algeria Telecom's FiberHome modems
 ```
 import("https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@vv2_migration/main.js");
 ```
+<!-- 
+allow multi reloads during debug using:
+import(`https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@vv2_migration/main.js?t=${Date.now()}`);
+-->
+
 - Press Enter
 ![result](img/results.png)
 
