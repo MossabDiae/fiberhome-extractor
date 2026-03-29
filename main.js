@@ -19,7 +19,9 @@ async function loadJS(url) {
 async function getJSON(url) {
     const response = await fetch(url + "&_=" + Math.random());
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (data.session_valid === 0) throw new Error(`Session invalid for ${url}`);
+    return data;
 }
 
 async function logout() {
@@ -229,11 +231,7 @@ function showPopup(data) {
 
 // ===== ENTRY POINT =====
 // Init vars
-let DeviceBaseInfo = {
-    model: '',
-    software: '',
-    mac: '',
-}
+let DeviceBaseInfo;
 
 const extractedData = {
     "Device Info": [],
@@ -244,19 +242,23 @@ const extractedData = {
 await loadJS('/js/aes.js');
 
 // Phase 1: Check login and escalate to admin
-let loginStatus = await getJSON(EP_CHECK_LOGIN);
-
-// Not logged in > login as user
-if (!loginStatus.login_user) {
+try {
+    DeviceBaseInfo = await getJSON(EP_BASE_INFO);
+} catch (e) {
+    // Not logged in > login as user
     await login('user', 'user1234');
-    loginStatus = await getJSON(EP_CHECK_LOGIN);
+    DeviceBaseInfo = await getJSON(EP_BASE_INFO);
 }
 
-// logged in (as user or admin) > collect DeviceBaseInfo
-const baseInfo = await getJSON(EP_BASE_INFO);
-DeviceBaseInfo.mac = baseInfo.brmac;
-DeviceBaseInfo.software = baseInfo.SoftwareVersion;
-DeviceBaseInfo.model = baseInfo.ModelName;
+let loginStatus = await getJSON(EP_CHECK_LOGIN);
+
+extractedData["Device Info"].push({
+    Name: "Unit Information",
+    "Model Name": `${DeviceBaseInfo.ModelName}`,
+    "Software Version": `${DeviceBaseInfo.SoftwareVersion}`,
+    "MAC Address": `${DeviceBaseInfo.brmac}`,
+});
+
 
 if (loginStatus.login_user === '1') {
     // TODO: generate admin pass from mac address
