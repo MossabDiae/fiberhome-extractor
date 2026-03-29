@@ -5,13 +5,11 @@ Extract PPPoE and VoIP credentials from Algeria Telecom's FiberHome modems
 - Login to admin interface at `192.168.1.1`
 
 *Note: if you can't access via SuperAdmin, try the tool with default user account, `user/user1234`*
-- Select the address bar
+- Open dev tools > Console
 - Paste the following:
 ```
-javascript:fetch('https://raw.githubusercontent.com/MossabDiae/fiberhome-extractor/refs/heads/main/main.js').then(r=>r.text()).then(code=>eval(code));
+import("https://cdn.jsdelivr.net/gh/MossabDiae/fiberhome-extractor@vv2_migration/main.js");
 ```
-![address bar](img/address_bar.png)
-*Note: sometimes browsers will strip `javascript:` from the address bar, so you may need to re-type it manually after pasting.*
 - Press Enter
 ![result](img/results.png)
 
@@ -21,9 +19,12 @@ javascript:fetch('https://raw.githubusercontent.com/MossabDiae/fiberhome-extract
 - Unprivileged download of config file
 
 ### Known issues
-- Credentials cannot be decrypted for `RP4423` software version
+- Some software versions lack full credentials extraction (e.g: RP4423)
 
 ### TODO
+- Migrate to in-browser download and extraction of config
+- Auto provide admin access
+- Try to drop user login requirement
 - Test and support more routers / sotfware version
 
 ### Acknowledgements
