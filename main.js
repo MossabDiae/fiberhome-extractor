@@ -2,6 +2,9 @@
 const SUPPORTED_MODELS = ['HG6145F1'];
 const SUPPORTED_SOFTWARE = ['RP4421', 'RP4423'];
 
+// EndPoints
+const EP_CHECK_LOGIN = '/cgi-bin/ajax?ajaxmethod=get_login_user';
+
 
 // ===== Utils =====
 async function loadJS(url) {
@@ -14,16 +17,31 @@ async function loadJS(url) {
 }
 
 async function getJSON(url) {
-    const response = await fetch(url);
+    const response = await fetch(url + "&_=" + Math.random());
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
     return response.json();
 }
 
-// Download config function
-function downloadConfig() {
-    window.location = "../cgi-bin/download?usrconfig_conf";
+async function prep_cfg() {
+    const { sessionid } = await getJSON(EP_CHECK_LOGIN);
+    const r = await fetch('/cgi-bin/ajax', {
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        method: 'POST',
+        body: `sessionid=${sessionid}&ajaxmethod=down_cfgfile`
+    });
+    return r.json();
 }
 
+// Download config function
+async function downloadConfig() {
+    await prep_cfg();
+    window.location = "/cgi-bin/download?usrconfig_conf";
+}
+
+async function get_cfg() {
+    await prep_cfg();
+    return fetch('/cgi-bin/download?usrconfig_conf').then(r => r.blob());
+}
 
 // ===== UI utils =====
 // Pretty print
@@ -197,78 +215,19 @@ const extractedData = {
     "Voip creds": []
 };
 
-// Load required scripts
-await loadJS('/js/aes.js');
+// Phase 1: Check login and escalate to admin
+// Not logged in > login as user > get mac > generate pass > login as admin
+// logged in as user > get mac > generate pass > login as admin
+// If logged in as admin > skip to phase 2
 
-// Decryption method and fallback
-if (typeof window.fhdecrypt !== "function") {
-    console.warn("%cWarning: couldn't find decryption method (fhdecrypt) in the page context. Values will be shown as seen.", "color: #ffa500; font-weight: bold;");
-    window.fhdecrypt = (val) => val + " (could not decrypt, missing decryption method)";
-}
+// Phase 2: Extract data
+// Collect config
 
-// Wrapper for fhdecrypt to handle empty/missing values
-const _originalDecrypt = window.fhdecrypt;
-window.fhdecrypt = (val) => {
-    if (!val || val === "") return "not extracted";
-    return _originalDecrypt(val);
-};
+// Decrypt config
 
-// Extraction logic: Login User
-const loginInfo = await getJSON('/cgi-bin/ajax?ajaxmethod=get_login_user');
-if (loginInfo && loginInfo.login_user) {
-    let loggedInAs = "Unknown";
-    loggedInAs = loginInfo.login_user === "2" ? "admin" : (loginInfo.login_user === "1" ? "user" : loginInfo.login_user);
-
-    extractedData["Device Info"].push({
-        Name: "User Info",
-        "Logged in as": loggedInAs,
-    });
-
-}
-
-// Extraction logic: Device Info
-const deviceInfo = await getJSON('/cgi-bin/ajax?ajaxmethod=get_base_info');
-if (deviceInfo) {
-    const modelNote = SUPPORTED_MODELS.includes(deviceInfo.ModelName) ? "" : " (not tested, extraction may not work)";
-    const softwareNote = SUPPORTED_SOFTWARE.includes(deviceInfo.SoftwareVersion) ? "" : " (not tested, extraction may not work)";
-
-    extractedData["Device Info"].push({
-        Name: "Unit Information",
-        "Model Name": `${deviceInfo.ModelName}${modelNote}`,
-        "Software Version": `${deviceInfo.SoftwareVersion}${softwareNote}`,
-    });
-}
-
-// Extraction logic: WAN (PPPoE)
-const wanData = await getJSON('/cgi-bin/ajax?ajaxmethod=get_allwan_info');
-if (wanData && wanData.wan) {
-    wanData.wan.forEach(item => {
-        extractedData["PPPoE creds"].push({
-            Name: item.Name,
-            Username: item.Username,
-            Password: fhdecrypt(item.Password),
-            "Vlan ID": item.vlanid
-        });
-    });
-}
-
-// Extraction logic: VoIP
-const voipResponse = await getJSON('/cgi-bin/ajax?ajaxmethod=get_voice_base_info');
-if (voipResponse && voipResponse.voice_base) {
-    const voipData = voipResponse.voice_base;
-    extractedData["Voip creds"].push({
-        Name: "VoIP Settings",
-        "VoIP Username": fhdecrypt(voipData.AuthUserName1),
-        "VoIP Password": fhdecrypt(voipData.AuthPassword1),
-        "Telephone Number": fhdecrypt(voipData.DirectoryNumber1),
-        "Proxy Server": voipData.ProxyServer,
-        "Proxy Server Port": voipData.ProxyServerPort,
-        "Register Server": voipData.RegistrarServer,
-        "Register Server Port": voipData.RegistrarServerPort
-    });
-}
+// Extract data
 
 
-// Display results
+// Phase 3 present data
 printResults(extractedData);
 showPopup(extractedData);
